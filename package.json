@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.18",
+    "@types/mysql": "^2.15.23",
     "typescript": "^5.2.2"
   }
 }
