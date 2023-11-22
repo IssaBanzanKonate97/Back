@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Core from "../Core";
 import { acuityConfiguration } from "./booking.config";
+import { AcuityAppointmentType, AcuityCalendar } from "./interfaces";
 
 class Booking extends Core {
   constructor() {
@@ -17,11 +18,11 @@ class Booking extends Core {
     };
   };
 
-  getAllCalendars = async () => {
+  private getAllCalendars = async (): Promise<AcuityCalendar[]> => {
     try {
       const header = this.getBookingAuthorizationHeader();
 
-      const response = await this.get(
+      const response = await this.get<AcuityCalendar[]>(
         `${acuityConfiguration.endpoint}/calendars`,
         header
       );
@@ -32,7 +33,24 @@ class Booking extends Core {
     }
   };
 
-  getAvailability = async (request: Request, res: Response) => {
+  private getAllAppointmentTypes = async (): Promise<
+    AcuityAppointmentType[]
+  > => {
+    try {
+      const header = this.getBookingAuthorizationHeader();
+
+      const response = await this.get<AcuityAppointmentType[]>(
+        `${acuityConfiguration.endpoint}/appointment-types`,
+        header
+      );
+
+      return response;
+    } catch (error) {
+      this.logError(error);
+    }
+  };
+
+  public getAvailability = async (request: Request, res: Response) => {
     try {
       const appointmentTypeID = this.getQueryParams(
         request,
@@ -62,11 +80,82 @@ class Booking extends Core {
       this.logError(error);
 
       res.status(500).send({
-        isSucess: false,
+        isSuccess: false,
         appointmentTypeID: undefined,
         error: error.message,
       });
     }
+  };
+
+  public getCalendarsIdsFromAppointmentTypeId = async (
+    request: Request,
+    res: Response
+  ) => {
+    try {
+      const appointmentTypeID = this.getQueryParams(
+        request,
+        "appointmentTypeID",
+        false
+      );
+
+      const resolvedAppointmentTypeID = Number(
+        appointmentTypeID ?? acuityConfiguration.defaultAppointmentTypeID
+      );
+
+      const appointmentTypes = await this.getAllAppointmentTypes();
+
+      const appointmentTypeFound = this.getAppointmentTypeFromId(
+        resolvedAppointmentTypeID,
+        appointmentTypes
+      );
+
+      if (!appointmentTypeFound) {
+        throw new Error(
+          `No appointment type found for id : ${appointmentTypeID}`
+        );
+      }
+
+      const { calendarIDs } = appointmentTypeFound;
+
+      const calendars = await this.getAllCalendars();
+
+      const calendarsFound = this.getCalendarFromIds(calendarIDs, calendars);
+
+      if (calendarsFound.length === 0) {
+        throw new Error(
+          `No calendars found for the appointment type : ${resolvedAppointmentTypeID}`
+        );
+      }
+
+      return res.status(200).send({
+        isSuccess: true,
+        calendars: calendarsFound,
+      });
+    } catch (error: unknown) {
+      return res.status(500).send({
+        isSucess: false,
+        calendars: [],
+        error,
+      });
+    }
+  };
+
+  private getAppointmentTypeFromId = (
+    appointmentTypeIdToFind: number,
+    appointmentTypes: AcuityAppointmentType[]
+  ): AcuityAppointmentType | undefined => {
+    return appointmentTypes.find(
+      (appointmentType) => appointmentType.id === appointmentTypeIdToFind
+    );
+  };
+
+  private getCalendarFromIds = (
+    calendarsIdsToFinds: number[],
+    calendars: AcuityCalendar[]
+  ): AcuityCalendar[] | undefined => {
+    return calendars.filter((calendar) =>
+      calendarsIdsToFinds.includes(calendar.id)
+    );
   };
 }
 

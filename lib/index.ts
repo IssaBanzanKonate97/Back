@@ -16,9 +16,7 @@ app.use(express.json());
 app.get("/calendars/all", async (req, res) => {
   const booking = new Booking();
 
-  const calendars = await booking.getAllCalendars();
-
-  res.send({ calendars });
+  return await booking.getCalendarsIdsFromAppointmentTypeId(req, res);
 });
 
 app.get("/availability", async (req, res) => {
