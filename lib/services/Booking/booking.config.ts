@@ -7,7 +7,7 @@ const acuityConfiguration: AcuityConfiguration = {
   endpoint:
     process.env.ACUITY_BASE_URL || "https://acuityscheduling.com/api/v1",
   defaultAppointmentTypeID:
-    process.env.FREE_RDV_BOOKING_APPOINTMENT_TYPE_ID || "0",
+    Number(process.env.FREE_RDV_BOOKING_APPOINTMENT_TYPE_ID) || 0,
 };
 
 export { acuityConfiguration };

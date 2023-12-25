@@ -14,8 +14,7 @@ app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.get("/calendars/all", async (req, res) => {
     const booking = new Booking_1.default();
-    const calendars = await booking.getAllCalendars();
-    res.send({ calendars });
+    return await booking.getCalendarsIdsFromAppointmentTypeId(req, res);
 });
 app.get("/availability", async (req, res) => {
     const booking = new Booking_1.default();
@@ -23,7 +22,6 @@ app.get("/availability", async (req, res) => {
 });
 app.post("/api/become-practitioner", async (req, res) => {
     const practitionerService = new Practitioner_1.default();
-    practitionerService.logError("test");
     await practitionerService.handle(req, res);
 });
 app.listen(port, () => {

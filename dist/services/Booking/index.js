@@ -25,6 +25,16 @@ class Booking extends Core_1.default {
             this.logError(error);
         }
     };
+    getAllAppointmentTypes = async () => {
+        try {
+            const header = this.getBookingAuthorizationHeader();
+            const response = await this.get(`${booking_config_1.acuityConfiguration.endpoint}/appointment-types`, header);
+            return response;
+        }
+        catch (error) {
+            this.logError(error);
+        }
+    };
     getAvailability = async (request, res) => {
         try {
             const appointmentTypeID = this.getQueryParams(request, "appointmentTypeID", false);
@@ -42,11 +52,45 @@ class Booking extends Core_1.default {
         catch (error) {
             this.logError(error);
             res.status(500).send({
-                isSucess: false,
+                isSuccess: false,
                 appointmentTypeID: undefined,
                 error: error.message,
             });
         }
+    };
+    getCalendarsIdsFromAppointmentTypeId = async (request, res) => {
+        try {
+            const appointmentTypeID = this.getQueryParams(request, "appointmentTypeID", false);
+            const resolvedAppointmentTypeID = Number(appointmentTypeID ?? booking_config_1.acuityConfiguration.defaultAppointmentTypeID);
+            const appointmentTypes = await this.getAllAppointmentTypes();
+            const appointmentTypeFound = this.getAppointmentTypeFromId(resolvedAppointmentTypeID, appointmentTypes);
+            if (!appointmentTypeFound) {
+                throw new Error(`No appointment type found for id : ${appointmentTypeID}`);
+            }
+            const { calendarIDs } = appointmentTypeFound;
+            const calendars = await this.getAllCalendars();
+            const calendarsFound = this.getCalendarFromIds(calendarIDs, calendars);
+            if (calendarsFound.length === 0) {
+                throw new Error(`No calendars found for the appointment type : ${resolvedAppointmentTypeID}`);
+            }
+            return res.status(200).send({
+                isSuccess: true,
+                calendars: calendarsFound,
+            });
+        }
+        catch (error) {
+            return res.status(500).send({
+                isSucess: false,
+                calendars: [],
+                error,
+            });
+        }
+    };
+    getAppointmentTypeFromId = (appointmentTypeIdToFind, appointmentTypes) => {
+        return appointmentTypes.find((appointmentType) => appointmentType.id === appointmentTypeIdToFind);
+    };
+    getCalendarFromIds = (calendarsIdsToFinds, calendars) => {
+        return calendars.filter((calendar) => calendarsIdsToFinds.includes(calendar.id));
     };
 }
 exports.default = Booking;

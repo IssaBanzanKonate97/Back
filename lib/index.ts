@@ -28,8 +28,6 @@ app.get("/availability", async (req, res) => {
 app.post("/api/become-practitioner", async (req, res) => {
   const practitionerService = new PractitionerService();
 
-  practitionerService.logError("test");
-
   await practitionerService.handle(req, res);
 });
 

@@ -2,10 +2,13 @@ import Core from "../Core";
 import { Request, Response } from "express";
 import type { PractitionerFormDataType } from "./interface";
 import Database from "../Database";
+import Mail from "../Mail/mail.service";
 
 class PractitionerService extends Core {
+  private readonly mailService: Mail;
   constructor() {
     super();
+    this.mailService = new Mail();
   }
 
   public async handle(req: Request, res: Response) {
@@ -16,7 +19,9 @@ class PractitionerService extends Core {
 
       const adaptedFormData = this.formAdapter(formData);
 
-      await this.saveToDatabase(adaptedFormData);
+      // await this.saveToDatabase(adaptedFormData);
+
+      await this.notifyByMail(adaptedFormData);
 
       return res.status(200).send({
         success: true,
@@ -29,6 +34,33 @@ class PractitionerService extends Core {
       });
     }
   }
+
+  private notifyByMail = async (adaptedFormData: PractitionerFormDataType) => {
+    try {
+      const mailData = {
+        lastName: adaptedFormData.lastName,
+        firstName: adaptedFormData.firstName,
+        email: adaptedFormData.email,
+        phoneNumber: adaptedFormData.phoneNumber,
+        address: adaptedFormData.address,
+        date: new Date().toLocaleDateString("fr-FR"),
+      };
+
+      console.log("mailData", mailData);
+
+      await this.mailService.sendNewPractitionerMail(
+        [
+          "papikonate@icloud.com",
+          "issabanzan.konate@yahoo.fr",
+          "mbayeousmane900@gmail.com",
+          "magnocare.email@gmail.com",
+        ],
+        mailData
+      );
+    } catch (e) {
+      this.logError(e);
+    }
+  };
 
   private formValidator(f: PractitionerFormDataType) {
     const validEmailRegex = new RegExp(

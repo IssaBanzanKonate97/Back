@@ -9,6 +9,9 @@ class Core {
     logError(error) {
         return console.log(`Une erreur est survenue : ${error}`);
     }
+    logSuccess(message) {
+        return console.log(`[SUCCESS] ${message}`);
+    }
     network = async (method, url, headers = {
         "Content-Type": "application/json",
     }, data = {}) => {

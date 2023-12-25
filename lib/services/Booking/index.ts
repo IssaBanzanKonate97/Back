@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import Core from "../Core";
 import { acuityConfiguration } from "./booking.config";
 import { AcuityAppointmentType, AcuityCalendar } from "./interfaces";
+import Mail from "../Mail/mail.service";
 
 class Booking extends Core {
   constructor() {

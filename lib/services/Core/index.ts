@@ -4,11 +4,15 @@ import { Request } from "express";
 class Core {
   constructor() {}
 
-  logError(error: any) {
+  public logError(error: any) {
     return console.log(`Une erreur est survenue : ${error}`);
   }
 
-  private network = async (
+  public logSuccess(message: string) {
+    return console.log(`[SUCCESS] ${message}`);
+  }
+
+  protected network = async (
     method: "GET" | "POST" | "PUT" | "DELETE",
     url: string,
     headers: any = {
