@@ -35,11 +35,11 @@ class Core {
   };
 
   public get = async <T>(url: string, headers = {}): Promise<T> => {
-    return (await this.network("GET", url, headers)) as T;
+    return (await this.network("GET", url, headers)) as unknown as T;
   };
 
   public post = async <T>(url: string, headers = {}, data: any): Promise<T> => {
-    return (await this.network("POST", url, headers, data)) as T;
+    return (await this.network("POST", url, headers, data)) as unknown as T;
   };
 
   public getQueryParams = (

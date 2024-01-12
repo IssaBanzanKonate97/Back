@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const Core_1 = __importDefault(require("../Core"));
 const booking_config_1 = require("./booking.config");
+const axios_1 = __importDefault(require("axios"));
 class Booking extends Core_1.default {
     constructor() {
         super();
@@ -25,7 +26,7 @@ class Booking extends Core_1.default {
             this.logError(error);
         }
     };
-    getAllAppointmentTypes = async () => {
+    /*private*/ getAllAppointmentTypes = async () => {
         try {
             const header = this.getBookingAuthorizationHeader();
             const response = await this.get(`${booking_config_1.acuityConfiguration.endpoint}/appointment-types`, header);
@@ -35,27 +36,78 @@ class Booking extends Core_1.default {
             this.logError(error);
         }
     };
-    getAvailability = async (request, res) => {
+    /*public getAvailability = async (request: Request, res: Response) => {
+      try {
+        const appointmentTypeID = this.getQueryParams(
+          request,
+          "appointmentTypeID",
+          false
+        );
+  
+        const resolvedAppointmentTypeID =
+          appointmentTypeID ?? acuityConfiguration.defaultAppointmentTypeID;
+  
+        const datetime = this.getQueryParams(request, "datetime");
+  
+        const header = this.getBookingAuthorizationHeader();
+  
+        const response = await this.get(
+          `${acuityConfiguration.endpoint}/availability/times?date=${datetime}&appointmentTypeID=${resolvedAppointmentTypeID}`,
+          header
+        );
+  
+        res.status(200).send({
+          isSucess: true,
+          datetime,
+          appointmentTypeID: resolvedAppointmentTypeID,
+          data: response,
+        });
+      } catch (error) {
+        this.logError(error);
+  
+        res.status(500).send({
+          isSuccess: false,
+          appointmentTypeID: undefined,
+          error: error.message,
+        });
+      }
+    };*/
+    fetchAppointmentDates = async (req, res) => {
         try {
-            const appointmentTypeID = this.getQueryParams(request, "appointmentTypeID", false);
-            const resolvedAppointmentTypeID = appointmentTypeID ?? booking_config_1.acuityConfiguration.defaultAppointmentTypeID;
-            const datetime = this.getQueryParams(request, "datetime");
+            const { appointmentTypeID, month, calendarID } = req.query;
             const header = this.getBookingAuthorizationHeader();
-            const response = await this.get(`${booking_config_1.acuityConfiguration.endpoint}/availability/times?date=${datetime}&appointmentTypeID=${resolvedAppointmentTypeID}`, header);
-            res.status(200).send({
-                isSucess: true,
-                datetime,
-                appointmentTypeID: resolvedAppointmentTypeID,
-                data: response,
-            });
+            const response = await this.get(`${booking_config_1.acuityConfiguration.endpoint}/availability/dates?appointmentTypeID=${Number(appointmentTypeID)}&month=${String(month)}&calendarID=${Number(calendarID)}&timezone=Europe/Paris`, header);
+            res.json(response);
         }
         catch (error) {
-            this.logError(error);
-            res.status(500).send({
-                isSuccess: false,
-                appointmentTypeID: undefined,
-                error: error.message,
-            });
+            if (axios_1.default.isAxiosError(error)) {
+                const axiosError = error;
+                if (axiosError.response) {
+                    res.status(400).json(axiosError.response.data);
+                }
+            }
+            else {
+                res.status(400).json({ message: error.message });
+            }
+        }
+    };
+    fetchAppointmentTimes = async (req, res) => {
+        try {
+            const { appointmentTypeID, calendarID, date } = req.query;
+            const header = this.getBookingAuthorizationHeader();
+            const response = await this.get(`${booking_config_1.acuityConfiguration.endpoint}/availability/times?appointmentTypeID=${Number(appointmentTypeID)}&date=${String(date)}&calendarID=${Number(calendarID)}&timezone=Europe/Paris`, header);
+            res.json(response);
+        }
+        catch (error) {
+            if (axios_1.default.isAxiosError(error)) {
+                const axiosError = error;
+                if (axiosError.response) {
+                    res.status(400).json(axiosError.response.data);
+                }
+            }
+            else {
+                res.status(400).json({ message: error.message });
+            }
         }
     };
     getCalendarsIdsFromAppointmentTypeId = async (request, res) => {

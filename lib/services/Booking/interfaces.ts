@@ -31,3 +31,12 @@ export interface AcuityCalendar {
   location: string;
   timezone: string;
 }
+
+export interface AcuityAppointmentDate {
+  date: Date;
+}
+
+export interface AcuityAppointmentTime {
+  time: string;
+  slotsAvailable: number;
+}
