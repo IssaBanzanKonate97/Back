@@ -87,6 +87,50 @@ class Booking extends Core {
     }
   };*/
 
+
+  // ...
+
+public createAppointment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { firstName, lastName, email, date, time, appointmentTypeID } = req.body;
+
+    // Vous devez convertir la date et l'heure en un format ISO ou en un timestamp que Acuity comprend
+    const dateTime = new Date(`${date}T${time}`).toISOString();
+
+    const postData = {
+      firstName,
+      lastName,
+      email,
+      // D'autres champs nécessaires pour Acuity
+      datetime: dateTime,
+      appointmentTypeID,
+    };
+
+    const header = this.getBookingAuthorizationHeader();
+
+    const response = await axios.post(
+      `${acuityConfiguration.endpoint}/appointments`,
+      postData,
+      { headers: header }
+    );
+
+    res.status(200).json;
+    (response.data);
+} catch (error) {
+if (axios.isAxiosError(error)) {
+const axiosError = error as AxiosError;
+if (axiosError.response) {
+res.status(axiosError.response.status).json(axiosError.response.data);
+} else {
+res.status(500).json({ message: "An error occurred while connecting to Acuity." });
+}
+} else {
+res.status(500).json({ message: error.message });
+}
+}
+};
+
+
   public fetchAppointmentDates = async (req: Request, res: Response): Promise<void> => {
     try {
       const { appointmentTypeID, month, calendarID } = req.query;
@@ -200,5 +244,7 @@ class Booking extends Core {
     );
   };
 }
+
+
 
 export default Booking;

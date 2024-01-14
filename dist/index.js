@@ -7,6 +7,8 @@ require("dotenv/config");
 const express_1 = __importDefault(require("express"));
 const Booking_1 = __importDefault(require("./services/Booking"));
 const Practitioner_1 = __importDefault(require("./services/Practitioner"));
+const contact_service_1 = require("./services/Contact/contact.service");
+const contact_config_1 = require("./services/Contact/contact.config");
 const cors = require("cors");
 const port = process.env.PORT || 4000;
 const app = (0, express_1.default)();
@@ -38,6 +40,10 @@ app.get("/appointment-types/all", async (req, res) => {
         res.status(500).send(error.toString());
     }
 });
+app.post('/api/book-appointment', async (req, res) => {
+    const booking = new Booking_1.default();
+    await booking.createAppointment(req, res);
+});
 app.get('/', (req, res) => {
     const links = [];
     app._router.stack.forEach(function (app) {
@@ -46,6 +52,17 @@ app.get('/', (req, res) => {
         }
     });
     return res.send(`API fonctionne<br>${links.join('<br>')}`);
+});
+app.post("/api/contact", async (req, res) => {
+    const contactService = new contact_service_1.ContactService(contact_config_1.smtpConfig);
+    try {
+        await contactService.sendMail(req.body);
+        res.status(200).send("Message envoyé avec succès.");
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).send("Erreur lors de l'envoi du message.");
+    }
 });
 app.listen(port, () => {
     console.log(`Serveur lancé sur le port : ${port} !`);

@@ -2,6 +2,8 @@ import "dotenv/config";
 import express from "express";
 import Booking from "./services/Booking";
 import PractitionerService from "./services/Practitioner";
+import { ContactService } from "./services/Contact/contact.service";
+import { smtpConfig } from "./services/Contact/contact.config";
 
 import cors = require("cors");
 
@@ -43,6 +45,10 @@ app.get("/appointment-types/all", async (req, res) => {
     res.status(500).send(error.toString());
   }
 });
+app.post('/api/book-appointment', async (req, res) => {
+  const booking = new Booking();
+  await booking.createAppointment(req, res);
+});
 
 app.get('/', (req, res) => {
   const links = [];
@@ -52,6 +58,17 @@ app.get('/', (req, res) => {
     }
   });
   return res.send(`API fonctionne<br>${links.join('<br>')}`);
+});
+
+app.post("/api/contact", async (req, res) => {
+  const contactService = new ContactService(smtpConfig);
+  try {
+    await contactService.sendMail(req.body);
+    res.status(200).send("Message envoyé avec succès.");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Erreur lors de l'envoi du message.");
+  }
 });
 
 app.listen(port, () => {
