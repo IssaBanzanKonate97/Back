@@ -36,57 +36,48 @@ class Booking extends Core_1.default {
             this.logError(error);
         }
     };
-    /*public getAvailability = async (request: Request, res: Response) => {
-      try {
-        const appointmentTypeID = this.getQueryParams(
-          request,
-          "appointmentTypeID",
-          false
-        );
-  
-        const resolvedAppointmentTypeID =
-          appointmentTypeID ?? acuityConfiguration.defaultAppointmentTypeID;
-  
-        const datetime = this.getQueryParams(request, "datetime");
-  
-        const header = this.getBookingAuthorizationHeader();
-  
-        const response = await this.get(
-          `${acuityConfiguration.endpoint}/availability/times?date=${datetime}&appointmentTypeID=${resolvedAppointmentTypeID}`,
-          header
-        );
-  
-        res.status(200).send({
-          isSucess: true,
-          datetime,
-          appointmentTypeID: resolvedAppointmentTypeID,
-          data: response,
-        });
-      } catch (error) {
-        this.logError(error);
-  
-        res.status(500).send({
-          isSuccess: false,
-          appointmentTypeID: undefined,
-          error: error.message,
-        });
-      }
-    };*/
-    // ...
-    createAppointment = async (req, res) => {
+    getAllClients = async (req, res) => {
         try {
-            const { firstName, lastName, email, date, time, appointmentTypeID } = req.body;
-            // Vous devez convertir la date et l'heure en un format ISO ou en un timestamp que Acuity comprend
-            const dateTime = new Date(`${date}T${time}`).toISOString();
+            const header = this.getBookingAuthorizationHeader();
+            const response = await axios_1.default.get(`${booking_config_1.acuityConfiguration.endpoint}/clients`, { headers: header });
+            res.status(200).json(response.data);
+        }
+        catch (error) {
+        }
+    };
+    createClient = async (req, res) => {
+        try {
+            const { firstName, lastName, email, phone } = req.body;
             const postData = {
                 firstName,
                 lastName,
                 email,
-                // D'autres champs nécessaires pour Acuity
-                datetime: dateTime,
-                appointmentTypeID,
+                phone,
             };
             const header = this.getBookingAuthorizationHeader();
+            const response = await axios_1.default.post(`${booking_config_1.acuityConfiguration.endpoint}/clients`, postData, { headers: header });
+            res.status(200).json(response.data);
+        }
+        catch (error) {
+        }
+    };
+    createAppointment = async (req, res) => {
+        try {
+            const { firstName, lastName, email, date, time, appointmentTypeID, calendar, phone } = req.body;
+            const dateTime = new Date(`${date}T${time}`).toISOString();
+            console.log('datetime createapppointment', dateTime);
+            const postData = {
+                firstName,
+                lastName,
+                email,
+                phone,
+                datetime: dateTime,
+                appointmentTypeID,
+                calendar,
+            };
+            console.log(postData);
+            const header = this.getBookingAuthorizationHeader();
+            console.log(`req = ${JSON.stringify(req.body)} et header = ${JSON.stringify(header)}`);
             const response = await axios_1.default.post(`${booking_config_1.acuityConfiguration.endpoint}/appointments`, postData, { headers: header });
             res.status(200).json;
             (response.data);

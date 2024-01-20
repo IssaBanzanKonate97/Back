@@ -6,7 +6,7 @@ const endpoint: string =
 const from: string = process.env.SG_FROM_EMAIL || "example@.sendgrid.net";
 const displayNameFrom: string =
   process.env.SG_FROM_DISPLAY_NAME ||
-  "L'Équipe Institut ADIOS (Issa & Ousmane)";
+  "Team Book free session";
 
 const mailServiceConfig: MailServiceConfig = {
   apiKey,

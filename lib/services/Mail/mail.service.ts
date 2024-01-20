@@ -28,7 +28,7 @@ class Mail extends Core {
     data: NewPractitionerMailData
   ): Promise<void> => {
     try {
-      const subject = "Nouveau praticien inscrit sur la plateforme";
+      const subject = "New subscription on the platform";
       const templateId = this.templatesIds.newPractitioner;
 
       console.log("templateId", templateId);
@@ -63,7 +63,7 @@ class Mail extends Core {
 
     await this.network("POST", this.sendgridEndpoint, headers, payload);
 
-    this.logSuccess("Un email transactionnel a été envoyé avec succès !");
+    this.logSuccess("A transactional email has been sent successfully !");
   };
 
   private buildDynamicTemplatePayload = (config: DynamicTemplateMail): any => {

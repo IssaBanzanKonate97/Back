@@ -1,18 +1,22 @@
 import "dotenv/config";
+
 import express from "express";
 import Booking from "./services/Booking";
 import PractitionerService from "./services/Practitioner";
 import { ContactService } from "./services/Contact/contact.service";
-import { smtpConfig } from "./services/Contact/contact.config";
+// import { smtpConfig } from "./services/Contact/contact.config"; // Décommentez si nécessaire pour l'option 1
 
-import cors = require("cors");
+import cors from 'cors';
 
-const port = process.env.PORT || 4000;
+const port = process.env.PORT; // Utilisez directement la variable d'environnement PORT
 
+if (!port) {
+  console.error("La variable d'environnement PORT n'est pas définie.");
+  process.exit(1);
+}
 const app = express();
 
 app.use(cors());
-
 app.use(express.json());
 
 app.get("/calendars/all", async (req, res) => {
@@ -29,10 +33,19 @@ app.get("/fetch_appointment_times", async (req, res) => {
   const booking = new Booking();
   await booking.fetchAppointmentTimes(req, res);
 });
+app.get("/practitioners", async (req, res) => {
+  try {
+    const practitionerService = new PractitionerService();
+    const practitioners = await practitionerService.getAllPractitioners(); // Cette méthode doit être implémentée
+    res.json(practitioners);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Erreur lors de la récupération des praticiens.");
+  }
+});
 
 app.post("/api/become-practitioner", async (req, res) => {
   const practitionerService = new PractitionerService();
-
   await practitionerService.handle(req, res);
 });
 
@@ -45,23 +58,27 @@ app.get("/appointment-types/all", async (req, res) => {
     res.status(500).send(error.toString());
   }
 });
+
 app.post('/api/book-appointment', async (req, res) => {
+  console.log(`req1 = ${req.body}`)
+  console.log(`req2 = ${JSON.stringify(req.body)}`)
   const booking = new Booking();
   await booking.createAppointment(req, res);
 });
 
 app.get('/', (req, res) => {
   const links = [];
-  app._router.stack.forEach(function(app: { route: { path: any; }; }){
-    if (app.route && app.route.path && app.route.path !== '/'){
-      links.push(`<a href='${app.route.path}'>${app.route.path}</a>`);
+  app._router.stack.forEach(function(route) {
+    if (route.route && route.route.path && route.route.path !== '/') {
+      links.push(`<a href='${route.route.path}'>${route.route.path}</a>`);
     }
   });
   return res.send(`API fonctionne<br>${links.join('<br>')}`);
 });
 
 app.post("/api/contact", async (req, res) => {
-  const contactService = new ContactService(smtpConfig);
+
+  const contactService = new ContactService();
   try {
     await contactService.sendMail(req.body);
     res.status(200).send("Message envoyé avec succès.");
@@ -71,6 +88,18 @@ app.post("/api/contact", async (req, res) => {
   }
 });
 
+app.post('/api/create-client', async (req, res) => {
+  const booking = new Booking();
+  await booking.createClient(req, res);
+});
+
+app.get('/api/clients', async (req, res) => {
+  const booking = new Booking();
+  await booking.getAllClients(req, res);
+});
+
 app.listen(port, () => {
   console.log(`Serveur lancé sur le port : ${port} !`);
 });
+export default app;
+

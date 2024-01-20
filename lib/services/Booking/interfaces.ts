@@ -40,3 +40,9 @@ export interface AcuityAppointmentTime {
   time: string;
   slotsAvailable: number;
 }
+export interface AcuityClient {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}

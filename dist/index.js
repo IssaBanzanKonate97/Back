@@ -8,11 +8,15 @@ const express_1 = __importDefault(require("express"));
 const Booking_1 = __importDefault(require("./services/Booking"));
 const Practitioner_1 = __importDefault(require("./services/Practitioner"));
 const contact_service_1 = require("./services/Contact/contact.service");
-const contact_config_1 = require("./services/Contact/contact.config");
-const cors = require("cors");
-const port = process.env.PORT || 4000;
+// import { smtpConfig } from "./services/Contact/contact.config"; // Décommentez si nécessaire pour l'option 1
+const cors_1 = __importDefault(require("cors"));
+const port = process.env.PORT; // Utilisez directement la variable d'environnement PORT
+if (!port) {
+    console.error("La variable d'environnement PORT n'est pas définie.");
+    process.exit(1);
+}
 const app = (0, express_1.default)();
-app.use(cors());
+app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.get("/calendars/all", async (req, res) => {
     const booking = new Booking_1.default();
@@ -25,6 +29,17 @@ app.get("/fetch_appointment_dates", async (req, res) => {
 app.get("/fetch_appointment_times", async (req, res) => {
     const booking = new Booking_1.default();
     await booking.fetchAppointmentTimes(req, res);
+});
+app.get("/practitioners", async (req, res) => {
+    try {
+        const practitionerService = new Practitioner_1.default();
+        const practitioners = await practitionerService.getAllPractitioners(); // Cette méthode doit être implémentée
+        res.json(practitioners);
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).send("Erreur lors de la récupération des praticiens.");
+    }
 });
 app.post("/api/become-practitioner", async (req, res) => {
     const practitionerService = new Practitioner_1.default();
@@ -41,20 +56,22 @@ app.get("/appointment-types/all", async (req, res) => {
     }
 });
 app.post('/api/book-appointment', async (req, res) => {
+    console.log(`req1 = ${req.body}`);
+    console.log(`req2 = ${JSON.stringify(req.body)}`);
     const booking = new Booking_1.default();
     await booking.createAppointment(req, res);
 });
 app.get('/', (req, res) => {
     const links = [];
-    app._router.stack.forEach(function (app) {
-        if (app.route && app.route.path && app.route.path !== '/') {
-            links.push(`<a href='${app.route.path}'>${app.route.path}</a>`);
+    app._router.stack.forEach(function (route) {
+        if (route.route && route.route.path && route.route.path !== '/') {
+            links.push(`<a href='${route.route.path}'>${route.route.path}</a>`);
         }
     });
     return res.send(`API fonctionne<br>${links.join('<br>')}`);
 });
 app.post("/api/contact", async (req, res) => {
-    const contactService = new contact_service_1.ContactService(contact_config_1.smtpConfig);
+    const contactService = new contact_service_1.ContactService();
     try {
         await contactService.sendMail(req.body);
         res.status(200).send("Message envoyé avec succès.");
@@ -64,6 +81,15 @@ app.post("/api/contact", async (req, res) => {
         res.status(500).send("Erreur lors de l'envoi du message.");
     }
 });
+app.post('/api/create-client', async (req, res) => {
+    const booking = new Booking_1.default();
+    await booking.createClient(req, res);
+});
+app.get('/api/clients', async (req, res) => {
+    const booking = new Booking_1.default();
+    await booking.getAllClients(req, res);
+});
 app.listen(port, () => {
     console.log(`Serveur lancé sur le port : ${port} !`);
 });
+exports.default = app;

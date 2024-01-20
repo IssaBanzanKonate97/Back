@@ -52,8 +52,7 @@ class PractitionerService extends Core {
         [
           "papikonate@icloud.com",
           "issabanzan.konate@yahoo.fr",
-          "mbayeousmane900@gmail.com",
-          "magnocare.email@gmail.com",
+          
         ],
         mailData
       );
@@ -64,12 +63,12 @@ class PractitionerService extends Core {
 
   private formValidator(f: PractitionerFormDataType) {
     const validEmailRegex = new RegExp(
-      // eslint-disable-next-line no-useless-escape
+      
       "^[a-zA-Z0-9._:$!%-]+@[a-zA-Z0-9.-]+.[a-zA-Z]$"
     );
 
     const validPhoneRegex = new RegExp(
-      // eslint-disable-next-line no-useless-escape
+      
       "^[+]?[(]?[0-9]{3}[)]?[-s.]?[0-9]{3}[-s.]?[0-9]{4,6}$"
     );
 
