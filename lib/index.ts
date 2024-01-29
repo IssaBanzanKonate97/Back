@@ -4,16 +4,18 @@ import express from "express";
 import Booking from "./services/Booking";
 import PractitionerService from "./services/Practitioner";
 import { ContactService } from "./services/Contact/contact.service";
-// import { smtpConfig } from "./services/Contact/contact.config"; // Décommentez si nécessaire pour l'option 1
+import Database from "./services/Database";
+// import { smtpConfig } from "./services/Contact/contact.config";
 
 import cors from 'cors';
 
-const port = process.env.PORT; // Utilisez directement la variable d'environnement PORT
+const port = process.env.PORT;
 
 if (!port) {
   console.error("La variable d'environnement PORT n'est pas définie.");
   process.exit(1);
 }
+
 const app = express();
 
 app.use(cors());
@@ -33,7 +35,8 @@ app.get("/fetch_appointment_times", async (req, res) => {
   const booking = new Booking();
   await booking.fetchAppointmentTimes(req, res);
 });
-app.get("/practitioners", async (req, res) => {
+
+/*app.get("/practitioners", async (req, res) => {
   try {
     const practitionerService = new PractitionerService();
     const practitioners = await practitionerService.getAllPractitioners(); // Cette méthode doit être implémentée
@@ -42,7 +45,7 @@ app.get("/practitioners", async (req, res) => {
     console.error(error);
     res.status(500).send("Erreur lors de la récupération des praticiens.");
   }
-});
+});*/
 
 app.post("/api/become-practitioner", async (req, res) => {
   const practitionerService = new PractitionerService();
@@ -76,6 +79,37 @@ app.get('/', (req, res) => {
   return res.send(`API fonctionne<br>${links.join('<br>')}`);
 });
 
+app.post('/login', async (req, res) => {
+  console.log(`req1 = ${req.body}`)
+  console.log(`req2 = ${JSON.stringify(req.body)}`)
+  const bookingService = new Booking();
+  await bookingService.loginUser(req, res);
+});
+
+
+//app.get('/api/clients', async (req, res) => {
+ // const booking = new Booking();
+ // await booking.getAllClients(req, res);
+//});
+
+app.get('/api/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const db = new Database();
+    const user = await db.findUserById(userId);
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).send('Utilisateur non trouvé');
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l’utilisateur:', error);
+    res.status(500).json({ message: 'Erreur interne du serveur' });
+  }
+});
+
+
+
 app.post("/api/contact", async (req, res) => {
 
   const contactService = new ContactService();
@@ -93,10 +127,6 @@ app.post('/api/create-client', async (req, res) => {
   await booking.createClient(req, res);
 });
 
-app.get('/api/clients', async (req, res) => {
-  const booking = new Booking();
-  await booking.getAllClients(req, res);
-});
 
 app.listen(port, () => {
   console.log(`Serveur lancé sur le port : ${port} !`);

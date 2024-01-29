@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Core_1 = __importDefault(require("../Core"));
 const booking_config_1 = require("./booking.config");
 const axios_1 = __importDefault(require("axios"));
+const Database_1 = __importDefault(require("../Database"));
 class Booking extends Core_1.default {
     constructor() {
         super();
@@ -36,15 +37,21 @@ class Booking extends Core_1.default {
             this.logError(error);
         }
     };
-    getAllClients = async (req, res) => {
-        try {
-            const header = this.getBookingAuthorizationHeader();
-            const response = await axios_1.default.get(`${booking_config_1.acuityConfiguration.endpoint}/clients`, { headers: header });
-            res.status(200).json(response.data);
-        }
-        catch (error) {
-        }
+    /*public getAllClients = async (req: Request, res: Response): Promise<void> => {
+      try {
+        const header = this.getBookingAuthorizationHeader();
+    
+        const response = await axios.get<ClientDataType[]>(
+          `${acuityConfiguration.endpoint}/clients`,
+          { headers: header }
+        );
+    
+        res.status(200).json(response.data);
+      } catch (error) {
+        
+      }
     };
+    */
     createClient = async (req, res) => {
         try {
             const { firstName, lastName, email, phone } = req.body;
@@ -63,9 +70,14 @@ class Booking extends Core_1.default {
     };
     createAppointment = async (req, res) => {
         try {
-            const { firstName, lastName, email, date, time, appointmentTypeID, calendar, phone } = req.body;
+            const { firstName, lastName, email, date, time, appointmentTypeID, calendar, phone, password } = req.body;
+            // Validation des données (à compléter en fonction de vos besoins)
+            if (!firstName || !lastName || !email || !date || !time || !appointmentTypeID || !calendar || !phone || !password) {
+                return res.status(400).json({ message: 'Missing required fields' });
+            }
+            // Formatage de la date et de l'heure au format ISO pour l'API externe
             const dateTime = new Date(`${date}T${time}`).toISOString();
-            console.log('datetime createapppointment', dateTime);
+            // Préparation des données pour l'API externe
             const postData = {
                 firstName,
                 lastName,
@@ -74,27 +86,55 @@ class Booking extends Core_1.default {
                 datetime: dateTime,
                 appointmentTypeID,
                 calendar,
+                password,
             };
-            console.log(postData);
             const header = this.getBookingAuthorizationHeader();
-            console.log(`req = ${JSON.stringify(req.body)} et header = ${JSON.stringify(header)}`);
-            const response = await axios_1.default.post(`${booking_config_1.acuityConfiguration.endpoint}/appointments`, postData, { headers: header });
-            res.status(200).json;
-            (response.data);
+            // Appel à l'API externe
+            const apiResponse = await axios_1.default.post(`${booking_config_1.acuityConfiguration.endpoint}/appointments`, postData, { headers: header });
+            const acuityUserId = apiResponse.data.id;
+            // Enregistrement dans la base de données
+            const db = new Database_1.default();
+            const userId = await db.createUser(firstName, lastName, email, phone, password);
+            await db.createAppointement(userId, appointmentTypeID, calendar, date, time);
+            // Envoi de la réponse au client après toutes les opérations
+            res.status(200).json({ message: 'Appointment and user created successfully', appointmentData: apiResponse.data });
         }
         catch (error) {
-            if (axios_1.default.isAxiosError(error)) {
-                const axiosError = error;
-                if (axiosError.response) {
-                    res.status(axiosError.response.status).json(axiosError.response.data);
+            console.error('Error creating appointment:', error);
+            // Check if a response has already been sent
+            if (!res.headersSent) {
+                if (axios_1.default.isAxiosError(error)) {
+                    res.status(error.response?.status || 500).json(error.response?.data || { message: "An error occurred while connecting to the external API." });
                 }
                 else {
-                    res.status(500).json({ message: "An error occurred while connecting to Acuity." });
+                    res.status(500).json({ message: error.message });
                 }
             }
-            else {
-                res.status(500).json({ message: error.message });
+        }
+    };
+    loginUser = async (req, res) => {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required.' });
+        }
+        try {
+            const db = new Database_1.default();
+            const user = await db.findUserByEmail(email);
+            if (!user) {
+                return res.status(401).json({ message: 'Invalid login credentials.' });
             }
+            // Ici, nous comparons directement les mots de passe en clair.
+            // Assurez-vous que le mot de passe dans la base de données est également en clair pour cette comparaison.
+            const isMatch = (user.password_hash === password);
+            if (!isMatch) {
+                return res.status(401).json({ message: 'Invalid login credentials.' });
+            }
+            // Si les mots de passe correspondent, procédez avec la connexion.
+            res.status(200).json({ message: 'Authentication successful', userId: user.id });
+        }
+        catch (error) {
+            console.error('Error during the login process:', error);
+            res.status(500).json({ message: 'Internal server error' });
         }
     };
     fetchAppointmentDates = async (req, res) => {

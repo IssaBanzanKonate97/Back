@@ -41,6 +41,7 @@ export interface AcuityAppointmentTime {
   slotsAvailable: number;
 }
 export interface AcuityClient {
+  
   firstName: string;
   lastName: string;
   email: string;
