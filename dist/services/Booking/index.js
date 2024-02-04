@@ -37,21 +37,6 @@ class Booking extends Core_1.default {
             this.logError(error);
         }
     };
-    /*public getAllClients = async (req: Request, res: Response): Promise<void> => {
-      try {
-        const header = this.getBookingAuthorizationHeader();
-    
-        const response = await axios.get<ClientDataType[]>(
-          `${acuityConfiguration.endpoint}/clients`,
-          { headers: header }
-        );
-    
-        res.status(200).json(response.data);
-      } catch (error) {
-        
-      }
-    };
-    */
     createClient = async (req, res) => {
         try {
             const { firstName, lastName, email, phone } = req.body;
@@ -71,13 +56,10 @@ class Booking extends Core_1.default {
     createAppointment = async (req, res) => {
         try {
             const { firstName, lastName, email, date, time, appointmentTypeID, calendar, phone, password } = req.body;
-            // Validation des données (à compléter en fonction de vos besoins)
             if (!firstName || !lastName || !email || !date || !time || !appointmentTypeID || !calendar || !phone || !password) {
                 return res.status(400).json({ message: 'Missing required fields' });
             }
-            // Formatage de la date et de l'heure au format ISO pour l'API externe
             const dateTime = new Date(`${date}T${time}`).toISOString();
-            // Préparation des données pour l'API externe
             const postData = {
                 firstName,
                 lastName,
@@ -89,19 +71,18 @@ class Booking extends Core_1.default {
                 password,
             };
             const header = this.getBookingAuthorizationHeader();
-            // Appel à l'API externe
             const apiResponse = await axios_1.default.post(`${booking_config_1.acuityConfiguration.endpoint}/appointments`, postData, { headers: header });
+            console.log("apiResponse :");
+            console.log(apiResponse);
             const acuityUserId = apiResponse.data.id;
-            // Enregistrement dans la base de données
+            console.log(acuityUserId);
             const db = new Database_1.default();
-            const userId = await db.createUser(firstName, lastName, email, phone, password);
-            await db.createAppointement(userId, appointmentTypeID, calendar, date, time);
-            // Envoi de la réponse au client après toutes les opérations
+            await db.createUser(acuityUserId, firstName, lastName, email, phone, password);
+            await db.createAppointement(acuityUserId, appointmentTypeID, calendar, date, time);
             res.status(200).json({ message: 'Appointment and user created successfully', appointmentData: apiResponse.data });
         }
         catch (error) {
             console.error('Error creating appointment:', error);
-            // Check if a response has already been sent
             if (!res.headersSent) {
                 if (axios_1.default.isAxiosError(error)) {
                     res.status(error.response?.status || 500).json(error.response?.data || { message: "An error occurred while connecting to the external API." });
@@ -112,6 +93,31 @@ class Booking extends Core_1.default {
             }
         }
     };
+    rescheduleAppointment = async (req, res) => {
+        const { id, newDate, newTime } = req.body;
+        if (!id || !newDate || !newTime) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+        try {
+            const dateTime = new Date(`${newDate}T${newTime}`).toISOString();
+            const url = `${booking_config_1.acuityConfiguration.endpoint}/appointments/${id}/reschedule`;
+            const postData = {
+                datetime: dateTime
+            };
+            const header = this.getBookingAuthorizationHeader();
+            await axios_1.default.put(url, postData, { headers: header });
+            const db = new Database_1.default();
+            await db.updateAppointment(id, newDate, newTime);
+            res.status(200).json({ message: 'Appointment rescheduled successfully' });
+        }
+        catch (error) {
+            this.logError(error);
+            if (axios_1.default.isAxiosError(error) && error.response) {
+                return res.status(error.response.status).json(error.response.data);
+            }
+            res.status(500).json({ message: 'Internal server error' });
+        }
+    };
     loginUser = async (req, res) => {
         const { email, password } = req.body;
         if (!email || !password) {
@@ -120,17 +126,17 @@ class Booking extends Core_1.default {
         try {
             const db = new Database_1.default();
             const user = await db.findUserByEmail(email);
+            const user_id = user.user_id;
+            console.log("user_id: ", user_id);
             if (!user) {
                 return res.status(401).json({ message: 'Invalid login credentials.' });
             }
-            // Ici, nous comparons directement les mots de passe en clair.
-            // Assurez-vous que le mot de passe dans la base de données est également en clair pour cette comparaison.
             const isMatch = (user.password_hash === password);
             if (!isMatch) {
                 return res.status(401).json({ message: 'Invalid login credentials.' });
             }
             // Si les mots de passe correspondent, procédez avec la connexion.
-            res.status(200).json({ message: 'Authentication successful', userId: user.id });
+            res.status(200).json({ message: 'Authentication successful', acuityUserId: user_id });
         }
         catch (error) {
             console.error('Error during the login process:', error);

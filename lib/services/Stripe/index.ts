@@ -1,6 +1,6 @@
 import express from 'express';
 import { stripe } from './stripe.config';
-import { PaymentIntent } from './interface';
+import { PaymentIntent } from './stripe.interface';
 
 const app = express();
 app.use(express.json());

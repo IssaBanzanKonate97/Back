@@ -9,6 +9,7 @@ const Booking_1 = __importDefault(require("./services/Booking"));
 const Practitioner_1 = __importDefault(require("./services/Practitioner"));
 const contact_service_1 = require("./services/Contact/contact.service");
 const Database_1 = __importDefault(require("./services/Database"));
+const axios_1 = __importDefault(require("axios"));
 // import { smtpConfig } from "./services/Contact/contact.config";
 const cors_1 = __importDefault(require("cors"));
 const port = process.env.PORT;
@@ -80,11 +81,11 @@ app.post('/login', async (req, res) => {
 // const booking = new Booking();
 // await booking.getAllClients(req, res);
 //});
-app.get('/api/user/:userId', async (req, res) => {
+app.get('/api/user/:acuityUserId', async (req, res) => {
     try {
-        const { userId } = req.params;
+        const { acuityUserId } = req.params;
         const db = new Database_1.default();
-        const user = await db.findUserById(userId);
+        const user = await db.findUserById(acuityUserId);
         if (user) {
             res.json(user);
         }
@@ -95,6 +96,56 @@ app.get('/api/user/:userId', async (req, res) => {
     catch (error) {
         console.error('Erreur lors de la récupération de l’utilisateur:', error);
         res.status(500).json({ message: 'Erreur interne du serveur' });
+    }
+});
+app.put('/api/user/:acuityUserId', async (req, res) => {
+    try {
+        const { acuityUserId } = req.params;
+        const { Lastname, Firstname, Mail, Mobile } = req.body;
+        const db = new Database_1.default();
+        await db.updateUser(Number(acuityUserId), Firstname, Lastname, Mail, Mobile);
+        res.json({ message: 'Informations de l’utilisateur mises à jour avec succès.' });
+    }
+    catch (error) {
+        console.error('Erreur lors de la mise à jour de l’utilisateur:', error);
+        res.status(500).json({ message: 'Erreur interne du serveur' });
+    }
+});
+app.get('/api/appointments/user/:acuityUserId', async (req, res) => {
+    try {
+        const { acuityUserId } = req.params;
+        const db = new Database_1.default();
+        const appointments = await db.getAppointmentsByUserId(Number(acuityUserId));
+        res.json(appointments);
+    }
+    catch (error) {
+        console.error('Error fetching appointments for user:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+app.put('/api/appointments/:id/reschedule', async (req, res) => {
+    const { id } = req.params;
+    const { newDate, newTime } = req.body;
+    const newDateTimeISO = new Date(`${newDate}T${newTime}`).toISOString();
+    const authHeader = {
+        'Authorization': `Basic ${Buffer.from(`${process.env.ACUITY_USER_ID}:${process.env.ACUITY_API_KEY}`).toString('base64')}`,
+        'Content-Type': 'application/json'
+    };
+    const url = `${process.env.ACUITY_BASE_URL}/appointments/${id}/reschedule`;
+    try {
+        const acuityResponse = await axios_1.default.put(url, { datetime: newDateTimeISO }, { headers: authHeader });
+        const db = new Database_1.default();
+        await db.updateAppointment(newDate, newTime, id);
+        res.json({ message: 'Le rendez-vous a été reprogrammé avec succès.', data: acuityResponse.data });
+    }
+    catch (error) {
+        console.error('Erreur lors de la connexion à l\'API Acuity ou de la mise à jour de la base de données :', error);
+        if (error.response) {
+            res.status(error.response.status).json({ message: 'Erreur lors de la reprogrammation avec l\'API Acuity', details: error.response.data });
+        }
+        else {
+            res.status(500).json({ message: 'Erreur interne du serveur' });
+        }
     }
 });
 app.post("/api/contact", async (req, res) => {

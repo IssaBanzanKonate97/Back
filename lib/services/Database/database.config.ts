@@ -8,7 +8,7 @@ export interface DatabaseConfiguration {
 const db_config: DatabaseConfiguration = {
   user: "root",
   password: "Banzan9771",
-  server: "localhost", // ou l'adresse de votre serveur de base de données
+  server: "localhost",
   database: "clients",
 };
 
