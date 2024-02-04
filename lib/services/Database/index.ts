@@ -97,11 +97,14 @@ class Database {
     return results;
   }
 
-  public updateAppointment(id: number, newDate: string, newTime: string): Promise<void> {
-    const formattedTime = `${newTime}:00`;
+  public updateAppointment(newDate: string, newTime: string, id: string): Promise<void> {
+    // Assurez-vous que newTime est au format HH:MM:SS
+    // Si newTime est déjà au bon format, cette étape est redondante et peut être ajustée
+    const formattedTime = newTime.length === 5 ? `${newTime}:00` : newTime;
     const sql = `UPDATE appointments SET date = ?, time = ? WHERE user_id = ?`;
     return this.query(sql, [newDate, formattedTime, id]);
-  }
+}
+
 
 
 

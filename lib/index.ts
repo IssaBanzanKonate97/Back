@@ -158,6 +158,7 @@ app.put('/api/appointments/:id/reschedule', async (req, res) => {
 
     const db = new Database();
     await db.updateAppointment(newDate, newTime, id);
+    
 
 
     res.json({ message: 'Le rendez-vous a été reprogrammé avec succès.', data: acuityResponse.data });
