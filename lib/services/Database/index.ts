@@ -94,12 +94,10 @@ class Database {
   public async getAppointmentsByUserId(acuityUserId: number): Promise<any[]> {
     const sql = 'SELECT * FROM appointments WHERE user_id = ? ORDER BY date ASC, time ASC';
     const results = await this.query(sql, [acuityUserId]);
-    return results;
+    return results; 
   }
 
   public updateAppointment(newDate: string, newTime: string, id: string): Promise<void> {
-    // Assurez-vous que newTime est au format HH:MM:SS
-    // Si newTime est déjà au bon format, cette étape est redondante et peut être ajustée
     const formattedTime = newTime.length === 5 ? `${newTime}:00` : newTime;
     const sql = `UPDATE appointments SET date = ?, time = ? WHERE user_id = ?`;
     return this.query(sql, [newDate, formattedTime, id]);
