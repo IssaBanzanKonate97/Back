@@ -105,9 +105,11 @@ class Booking extends Core_1.default {
                 datetime: dateTime
             };
             const header = this.getBookingAuthorizationHeader();
-            await axios_1.default.put(url, postData, { headers: header });
+            const response = await axios_1.default.put(url, postData, { headers: header });
+            const acuityUserId = response.data.user.id;
+            console.log(acuityUserId);
             const db = new Database_1.default();
-            await db.updateAppointment(id, newDate, newTime);
+            await db.updateAppointment(newDate, newTime, acuityUserId);
             res.status(200).json({ message: 'Appointment rescheduled successfully' });
         }
         catch (error) {

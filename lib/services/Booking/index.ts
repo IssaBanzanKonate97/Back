@@ -2,11 +2,9 @@ import { Request, Response } from "express";
 import Core from "../Core";
 import { acuityConfiguration } from "./booking.config";
 import { AcuityAppointmentDate, AcuityAppointmentTime, AcuityAppointmentType, AcuityCalendar } from "./interfaces";
-import Mail from "../Mail/mail.service";
 import axios, { AxiosError } from "axios";
 import Database from "../Database";
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+
 
 
 
@@ -102,7 +100,7 @@ class Booking extends Core {
         phone,
         datetime: dateTime,
         appointmentTypeID,
-        calendar,
+        calendar, 
         password,
       };
 
@@ -164,12 +162,15 @@ class Booking extends Core {
 
       const header = this.getBookingAuthorizationHeader();
 
+      const response = await axios.put(url, postData, { headers: header });
 
-      await axios.put(url, postData, { headers: header });
-
+      
+      const acuityUserId = response.data.user.id;
+ 
+      console.log(acuityUserId);
 
       const db = new Database();
-      await db.updateAppointment(id, newDate, newTime);
+      await db.updateAppointment(newDate, newTime, acuityUserId);
 
       res.status(200).json({ message: 'Appointment rescheduled successfully' });
     } catch (error) {
@@ -179,7 +180,7 @@ class Booking extends Core {
       }
       res.status(500).json({ message: 'Internal server error' });
     }
-  };
+};
 
 
 

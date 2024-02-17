@@ -6,6 +6,12 @@ import PractitionerService from "./services/Practitioner";
 import { ContactService } from "./services/Contact/contact.service";
 import Database from "./services/Database";
 import axios from 'axios';
+import multer from 'multer';
+
+const upload = multer();
+// Assurez-vous que le chemin correspond à l'emplacement de votre fichier swikly.config.ts
+import { swiklyConfig } from './services/Swikly/swikly.config';
+
 // import { smtpConfig } from "./services/Contact/contact.config";
 
 import cors from 'cors';
@@ -88,12 +94,14 @@ app.post('/login', async (req, res) => {
 });
 
 
+
 //app.get('/api/clients', async (req, res) => {
 // const booking = new Booking();
 // await booking.getAllClients(req, res);
 //});
 
 app.get('/api/user/:acuityUserId', async (req, res) => {
+  
   try {
     const { acuityUserId } = req.params;
     const db = new Database();
@@ -136,8 +144,8 @@ app.get('/api/appointments/user/:acuityUserId', async (req, res) => {
   }
 });
 
-app.put('/api/appointments/:id/reschedule', async (req, res) => {
-  const { id } = req.params;
+app.put('/api/appointments/:acuityUserId/reschedule', async (req, res) => {
+  const { acuityUserId } = req.params;
   const { newDate, newTime } = req.body;
 
 
@@ -150,14 +158,15 @@ app.put('/api/appointments/:id/reschedule', async (req, res) => {
   };
 
 
-  const url = `${process.env.ACUITY_BASE_URL}/appointments/${id}/reschedule`;
+  const url = `${process.env.ACUITY_BASE_URL}/appointments/${acuityUserId}/reschedule`;
+
 
   try {
 
     const acuityResponse = await axios.put(url, { datetime: newDateTimeISO }, { headers: authHeader });
 
     const db = new Database();
-    await db.updateAppointment(newDate, newTime, id);
+    await db.updateAppointment(newDate, newTime, acuityUserId);
     
 
 
@@ -174,6 +183,34 @@ app.put('/api/appointments/:id/reschedule', async (req, res) => {
   }
 });
 
+app.put('/api/appointments/:id/cancel', async (req, res) => {
+  const { id } = req.params;
+
+  const authHeader = {
+    'Authorization': `Basic ${Buffer.from(`${process.env.ACUITY_USER_ID}:${process.env.ACUITY_API_KEY}`).toString('base64')}`,
+    'Content-Type': 'application/json'
+  };
+
+  const url = `${process.env.ACUITY_BASE_URL}/appointments/${id}/cancel`;
+
+  try {
+    // Annuler le rendez-vous via l'API Acuity
+    await axios.put(url, {}, { headers: authHeader });
+
+    
+    const db = new Database();
+    await db.cancelAppointment(id); 
+
+    res.json({ message: 'Le rendez-vous a été annulé avec succès.' });
+  } catch (error) {
+    console.error('Erreur lors de la connexion à l\'API Acuity ou de la mise à jour de la base de données :', error);
+    if (error.response) {
+      res.status(error.response.status).json({ message: 'Erreur lors d\'annulation avec l\'API Acuity', details: error.response.data });
+    } else {
+      res.status(500).json({ message: 'Erreur interne du serveur' });
+    }
+  }
+});
 
 
 app.post("/api/contact", async (req, res) => {
@@ -187,6 +224,25 @@ app.post("/api/contact", async (req, res) => {
     res.status(500).send("Erreur lors de l'envoi du message.");
   }
 });
+
+app.post('/api/v1_0/newSwik', upload.none(), async (req, res) => {
+  try {
+    const response = await axios.post('https://api-sandbox.swikly.com/v1_0/newSwik', req.body.formData, {
+      headers: {
+        'api_key': process.env.SWIKLY_API_KEY,
+        'api_secret': process.env.SWIKLY_API_SECRET,
+        'Content-Type': 'multipart/form-data',
+        'Access-Control-Allow-Origin' : '*' 
+      }
+    });
+    
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error during Swikly payment creation via proxy:', error);
+    res.status(500).send('Server error');
+  }
+});
+
 
 app.post('/api/create-client', async (req, res) => {
   const booking = new Booking();

@@ -10,6 +10,8 @@ const Practitioner_1 = __importDefault(require("./services/Practitioner"));
 const contact_service_1 = require("./services/Contact/contact.service");
 const Database_1 = __importDefault(require("./services/Database"));
 const axios_1 = __importDefault(require("axios"));
+const multer_1 = __importDefault(require("multer"));
+const upload = (0, multer_1.default)();
 // import { smtpConfig } from "./services/Contact/contact.config";
 const cors_1 = __importDefault(require("cors"));
 const port = process.env.PORT;
@@ -123,25 +125,49 @@ app.get('/api/appointments/user/:acuityUserId', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-app.put('/api/appointments/:id/reschedule', async (req, res) => {
-    const { id } = req.params;
+app.put('/api/appointments/:acuityUserId/reschedule', async (req, res) => {
+    const { acuityUserId } = req.params;
     const { newDate, newTime } = req.body;
     const newDateTimeISO = new Date(`${newDate}T${newTime}`).toISOString();
     const authHeader = {
         'Authorization': `Basic ${Buffer.from(`${process.env.ACUITY_USER_ID}:${process.env.ACUITY_API_KEY}`).toString('base64')}`,
         'Content-Type': 'application/json'
     };
-    const url = `${process.env.ACUITY_BASE_URL}/appointments/${id}/reschedule`;
+    const url = `${process.env.ACUITY_BASE_URL}/appointments/${acuityUserId}/reschedule`;
     try {
         const acuityResponse = await axios_1.default.put(url, { datetime: newDateTimeISO }, { headers: authHeader });
         const db = new Database_1.default();
-        await db.updateAppointment(newDate, newTime, id);
+        await db.updateAppointment(newDate, newTime, acuityUserId);
         res.json({ message: 'Le rendez-vous a été reprogrammé avec succès.', data: acuityResponse.data });
     }
     catch (error) {
         console.error('Erreur lors de la connexion à l\'API Acuity ou de la mise à jour de la base de données :', error);
         if (error.response) {
             res.status(error.response.status).json({ message: 'Erreur lors de la reprogrammation avec l\'API Acuity', details: error.response.data });
+        }
+        else {
+            res.status(500).json({ message: 'Erreur interne du serveur' });
+        }
+    }
+});
+app.put('/api/appointments/:id/cancel', async (req, res) => {
+    const { id } = req.params;
+    const authHeader = {
+        'Authorization': `Basic ${Buffer.from(`${process.env.ACUITY_USER_ID}:${process.env.ACUITY_API_KEY}`).toString('base64')}`,
+        'Content-Type': 'application/json'
+    };
+    const url = `${process.env.ACUITY_BASE_URL}/appointments/${id}/cancel`;
+    try {
+        // Annuler le rendez-vous via l'API Acuity
+        await axios_1.default.put(url, {}, { headers: authHeader });
+        const db = new Database_1.default();
+        await db.cancelAppointment(id);
+        res.json({ message: 'Le rendez-vous a été annulé avec succès.' });
+    }
+    catch (error) {
+        console.error('Erreur lors de la connexion à l\'API Acuity ou de la mise à jour de la base de données :', error);
+        if (error.response) {
+            res.status(error.response.status).json({ message: 'Erreur lors d\'annulation avec l\'API Acuity', details: error.response.data });
         }
         else {
             res.status(500).json({ message: 'Erreur interne du serveur' });
@@ -157,6 +183,23 @@ app.post("/api/contact", async (req, res) => {
     catch (error) {
         console.error(error);
         res.status(500).send("Erreur lors de l'envoi du message.");
+    }
+});
+app.post('/api/v1_0/newSwik', upload.none(), async (req, res) => {
+    try {
+        const response = await axios_1.default.post('https://api-sandbox.swikly.com/v1_0/newSwik', req.body.formData, {
+            headers: {
+                'api_key': process.env.SWIKLY_API_KEY,
+                'api_secret': process.env.SWIKLY_API_SECRET,
+                'Content-Type': 'multipart/form-data',
+                'Access-Control-Allow-Origin': '*'
+            }
+        });
+        res.json(response.data);
+    }
+    catch (error) {
+        console.error('Error during Swikly payment creation via proxy:', error);
+        res.status(500).send('Server error');
     }
 });
 app.post('/api/create-client', async (req, res) => {

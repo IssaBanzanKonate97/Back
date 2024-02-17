@@ -35,7 +35,7 @@ class Database {
 
   private validatePhoneNumber(phone: string): boolean {
 
-    return /^(\+\d{1,3}\d{6,12}|\d{2}(-\d{2}){4})$/.test(phone);
+    return /^\+?(\d{1,3}[ -]?)?(\(?\d+\)?[ -]?)*\d+$/.test(phone);
   }
 
   public async createUser(acuityUserId: number, firstName: string, lastName: string, email: string, phone: string, password: string): Promise<number> {
@@ -97,11 +97,24 @@ class Database {
     return results; 
   }
 
-  public updateAppointment(newDate: string, newTime: string, id: string): Promise<void> {
+  public updateAppointment(newDate: string, newTime: string, acuityUserId: string): Promise<void> {
     const formattedTime = newTime.length === 5 ? `${newTime}:00` : newTime;
     const sql = `UPDATE appointments SET date = ?, time = ? WHERE user_id = ?`;
-    return this.query(sql, [newDate, formattedTime, id]);
+    return this.query(sql, [newDate, formattedTime, acuityUserId]);
 }
+
+async cancelAppointment(id) {
+  try {
+    const sql = 'DELETE FROM appointments WHERE user_id = ?';
+    await this.query(sql, [id]);
+    console.log('Rendez-vous annulé avec succès.');
+  } catch (error) {
+    console.error('Erreur lors de l’annulation du rendez-vous:', error);
+    throw error; // Assurez-vous de gérer l'erreur en amont dans votre application
+  }
+}
+
+
 
 
 
