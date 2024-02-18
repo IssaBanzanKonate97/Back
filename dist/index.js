@@ -22,6 +22,7 @@ if (!port) {
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+app.use(express_1.default.urlencoded({ extended: true }));
 app.get("/calendars/all", async (req, res) => {
     const booking = new Booking_1.default();
     return await booking.getCalendarsIdsFromAppointmentTypeId(req, res);
@@ -187,7 +188,8 @@ app.post("/api/contact", async (req, res) => {
 });
 app.post('/api/v1_0/newSwik', upload.none(), async (req, res) => {
     try {
-        const response = await axios_1.default.post('https://api-sandbox.swikly.com/v1_0/newSwik', req.body.formData, {
+        console.log('req.body', req.body);
+        const response = await axios_1.default.post('https://api.swikly.com/v1_0/newSwik', req.body, {
             headers: {
                 'api_key': process.env.SWIKLY_API_KEY,
                 'api_secret': process.env.SWIKLY_API_SECRET,
@@ -195,7 +197,7 @@ app.post('/api/v1_0/newSwik', upload.none(), async (req, res) => {
                 'Access-Control-Allow-Origin': '*'
             }
         });
-        res.json(response.data);
+        res.status(200).json(response.data);
     }
     catch (error) {
         console.error('Error during Swikly payment creation via proxy:', error);

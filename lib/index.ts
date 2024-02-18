@@ -27,6 +27,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/calendars/all", async (req, res) => {
   const booking = new Booking();
@@ -226,8 +227,10 @@ app.post("/api/contact", async (req, res) => {
 });
 
 app.post('/api/v1_0/newSwik', upload.none(), async (req, res) => {
+
   try {
-    const response = await axios.post('https://api-sandbox.swikly.com/v1_0/newSwik', req.body.formData, {
+    console.log('req.body', req.body);
+    const response = await axios.post('https://api.swikly.com/v1_0/newSwik', req.body, {
       headers: {
         'api_key': process.env.SWIKLY_API_KEY,
         'api_secret': process.env.SWIKLY_API_SECRET,
@@ -236,7 +239,7 @@ app.post('/api/v1_0/newSwik', upload.none(), async (req, res) => {
       }
     });
     
-    res.json(response.data);
+    res.status(200).json(response.data);
   } catch (error) {
     console.error('Error during Swikly payment creation via proxy:', error);
     res.status(500).send('Server error');
