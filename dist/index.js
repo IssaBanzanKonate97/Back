@@ -188,8 +188,11 @@ app.post("/api/contact", async (req, res) => {
 });
 app.post('/api/v1_0/newSwik', upload.none(), async (req, res) => {
     try {
-        console.log('req.body', req.body);
-        const response = await axios_1.default.post('https://api.swikly.com/v1_0/newSwik', req.body, {
+        const requestBody = {
+            ...req.body,
+            callback_url: 'https://yourserver.com/redirect-to-google'
+        };
+        const response = await axios_1.default.post('https://api.swikly.com/v1_0/newSwik', requestBody, {
             headers: {
                 'api_key': process.env.SWIKLY_API_KEY,
                 'api_secret': process.env.SWIKLY_API_SECRET,
@@ -197,12 +200,16 @@ app.post('/api/v1_0/newSwik', upload.none(), async (req, res) => {
                 'Access-Control-Allow-Origin': '*'
             }
         });
+        console.log('response', response.data);
         res.status(200).json(response.data);
     }
     catch (error) {
         console.error('Error during Swikly payment creation via proxy:', error);
         res.status(500).send('Server error');
     }
+});
+app.post('/redirect-to-google', (req, res) => {
+    res.redirect('https://www.google.com');
 });
 app.post('/api/create-client', async (req, res) => {
     const booking = new Booking_1.default();
